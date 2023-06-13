@@ -1,0 +1,9 @@
+<resources>
+    <declare-styleable name="SetCardView">
+<!--        <attr name="color" format="integer" />-->
+<!--        <attr name="number" format="integer" />-->
+<!--        <attr name="shape" format="string" />-->
+<!--        <attr name="shading" format="string" />-->
+<!--        <attr name="cardSelected" format="boolean" />-->
+    </declare-styleable>
+</resources>
