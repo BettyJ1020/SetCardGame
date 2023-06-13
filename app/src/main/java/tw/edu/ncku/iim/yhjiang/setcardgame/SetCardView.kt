@@ -11,7 +11,9 @@ import android.view.View
 /**
  * TODO: document your custom view class.
  */
-//val cardIds = intent.getIntegerArrayListExtra("cardIds")
+
+var cardIds = mutableListOf<Int>() // to store each card's Id
+var selectedIds = mutableListOf<Int>()// to store selected card's Id
 class SetCardView : View {
 //    var cardId = intent.getStringExtra("cardIds")
     enum class Shape {
@@ -54,12 +56,16 @@ class SetCardView : View {
             invalidate()
         }
 
-    var cardIds = ArrayList<Int>() // to store each card's Id
 
     fun addCardIds(id: Int) {
         cardIds.add(id)
         Log.i("SetCardView", "Card ID added: $id")
+        Log.i("SetCardView", "Card IDs: $cardIds")
     }
+
+//    fun getSelectedIds(): ArrayList<Int> {
+//        return selectedIds
+//    }
 
 
     companion object SetCardConstants {
@@ -82,6 +88,20 @@ class SetCardView : View {
 
     private val mPaint = Paint() // For drawing border and face images
     private val mTextPaint = TextPaint() // for drawing pips (text)
+    interface SetCardClickListener {
+        fun onSetCardClick(selectedIds: List<Int>)
+    }
+
+    private var setCardClickListener: SetCardClickListener? = null
+
+    // Rest of the code remains the same...
+
+    fun setCardClickListener(listener: SetCardClickListener) {
+        setCardClickListener = listener
+    }
+
+
+
 
     private fun init(context: Context, attrs: AttributeSet? = null) {
         mPaint.setAntiAlias(true);
@@ -89,6 +109,18 @@ class SetCardView : View {
 
         setOnClickListener {
             cardSelected = !cardSelected // change between selected / unselected
+            if (cardSelected) {
+
+                selectedIds.add(id)
+                Log.i("SetCardView", "Card ID selected: $id")
+                Log.i("SetCardView", "Selected IDs: $selectedIds")
+
+            } else {
+                selectedIds.remove(id)
+                Log.i("SetCardView", "Card ID deselected: $id")
+                Log.i("SetCardView", "Selected IDs: $selectedIds")
+            }
+            setCardClickListener?.onSetCardClick(selectedIds) // Notify the click event
         }
 
     }
