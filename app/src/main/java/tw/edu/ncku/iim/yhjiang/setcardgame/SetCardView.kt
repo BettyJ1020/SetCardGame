@@ -56,6 +56,13 @@ class SetCardView : View {
             invalidate()
         }
 
+    var isVisible: Boolean = true
+        set(value) {
+            field = value
+            invalidate() // Redraw the view to reflect the changes
+        }
+
+
 
     fun addCardIds(id: Int) {
         cardIds.add(id)
@@ -94,10 +101,15 @@ class SetCardView : View {
 
     private var setCardClickListener: SetCardClickListener? = null
 
-    // Rest of the code remains the same...
 
     fun setCardClickListener(listener: SetCardClickListener) {
         setCardClickListener = listener
+    }
+
+    fun refreshSelected() {
+        if (!cardSelected) {
+            selectedIds.remove(id)
+        }
     }
 
 
@@ -110,7 +122,6 @@ class SetCardView : View {
         setOnClickListener {
             cardSelected = !cardSelected // change between selected / unselected
             if (cardSelected) {
-
                 selectedIds.add(id)
                 Log.i("SetCardView", "Card ID selected: $id")
                 Log.i("SetCardView", "Selected IDs: $selectedIds")
@@ -211,9 +222,8 @@ class SetCardView : View {
 
     private fun drawShapes(canvas: Canvas) {
         mPaint.color = color
-
         for (cardId in cardIds) {
-            if (id == cardId) {
+            if (id == cardId && isVisible) {
                 if (number == 1) {
                     drawShapeWithVerticalOffset(canvas, 0f)
                 } else if (number == 2) {
