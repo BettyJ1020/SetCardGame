@@ -9,11 +9,13 @@ import android.content.Intent
 import android.graphics.Color
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Parcel
+import android.os.Parcelable
 import android.util.Log
 import android.view.Gravity
+import android.view.ScrollCaptureSession
 import android.view.View
-import android.widget.LinearLayout
-import android.widget.Toast
+import android.widget.*
 
 data class CardAttributes(
     val color: Int,
@@ -22,10 +24,51 @@ data class CardAttributes(
     val shading: String
 )
 
+data class SelectedSet(
+    val id: Int,
+    val color: Int,
+    val number: Int,
+    val shape: SetCardView.Shape,
+    val shading: SetCardView.Shading
+): Parcelable {
+    constructor(parcel: Parcel) : this(
+        parcel.readInt(),
+        parcel.readInt(),
+        parcel.readInt(),
+        SetCardView.Shape.valueOf(parcel.readString()!!),
+        SetCardView.Shading.valueOf(parcel.readString()!!)
+    )
+
+    override fun writeToParcel(parcel: Parcel, flags: Int) {
+        parcel.writeInt(id)
+        parcel.writeInt(color)
+        parcel.writeInt(number)
+        parcel.writeString(shape.name)
+        parcel.writeString(shading.name)
+    }
+
+    override fun describeContents(): Int {
+        return 0
+    }
+
+    companion object CREATOR : Parcelable.Creator<SelectedSet> {
+        override fun createFromParcel(parcel: Parcel): SelectedSet {
+            return SelectedSet(parcel)
+        }
+
+        override fun newArray(size: Int): Array<SelectedSet?> {
+            return arrayOfNulls(size)
+        }
+    }
+}
+
 var attrIndex = 80
 val PURPLE = Color.rgb(128, 0, 128)
 val RED = Color.RED
 val GREEN = Color.GREEN
+
+var SET = 0
+var setIds = mutableListOf<Int>() // store ids of set
 
 
 
@@ -35,7 +78,7 @@ class MainActivity : AppCompatActivity(), SetCardView.SetCardClickListener {
     val numbers = listOf(1, 2, 3)
     val shapes = listOf("WORM", "DIAMOND", "OVAL")
     val shadings = listOf("SOLID", "STRIP", "EMPTY")
-    private lateinit var attrSets: List<CardAttributes>
+    private lateinit var attrSets: List<CardAttributes> // random attributes set
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
@@ -46,13 +89,9 @@ class MainActivity : AppCompatActivity(), SetCardView.SetCardClickListener {
 
 
 
-
-
-        var numOfCard = 3
-//        var cardIds = ArrayList<Int>() // to store each card's Id
-
         // adding cards
         val parentLayout: LinearLayout = findViewById(R.id.parentLayout)
+        var numOfCard = 3
         attrSets = randomAttrs(colors, numbers, shapes, shadings)
         Log.d("MainActivity", "Size of combinations: ${attrSets.size}") // 81
         for (i in 1..4) { // initial 12 cards
@@ -60,11 +99,13 @@ class MainActivity : AppCompatActivity(), SetCardView.SetCardClickListener {
             linearLayout.orientation = LinearLayout.HORIZONTAL
             linearLayout.layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, // width
-                LinearLayout.LayoutParams.WRAP_CONTENT // height
-            ).apply {
-                weight = 1f
-            }
+                550 // height
+            )
+//                .apply {
+//                weight = 1f
+//            }
             linearLayout.gravity = Gravity.CENTER
+//            linearLayout.setBackgroundColor(Color.RED)
 
 
             for (j in 1..numOfCard) {
@@ -77,7 +118,6 @@ class MainActivity : AppCompatActivity(), SetCardView.SetCardClickListener {
                 layoutParams.setMargins(10, 10, 10, 10)
 
                 // random attrs
-
                 val cardView = SetCardView(this)
                 cardView.setCardClickListener(this)
                 cardView.id = View.generateViewId()
@@ -95,7 +135,16 @@ class MainActivity : AppCompatActivity(), SetCardView.SetCardClickListener {
             parentLayout.addView(linearLayout)
         }
 
+        val button: Button = findViewById(R.id.button_history)
+        button.setOnClickListener {
+            // Code to be executed when the button is clicked
+            // For example, you can start a new activity here
+            val intent = Intent(this@MainActivity, HistoryActivity::class.java)
+            intent.putExtra("SET", SET)
+//            intent.
 
+            startActivity(intent)
+        }
     }
 
     override fun onSetCardClick(clickedCardIds: List<Int>) {
@@ -108,9 +157,28 @@ class MainActivity : AppCompatActivity(), SetCardView.SetCardClickListener {
         if (selectedIds.size == 3) {
             val selectedViews = tw.edu.ncku.iim.yhjiang.setcardgame.selectedIds.map { findViewById<SetCardView>(it) }
             if (makingSet(selectedViews)) { // if forms a set
-                // replace 3 cards
-                // Create an AnimatorSet to combine multiple animations
-                val animatorSet = AnimatorSet()
+                SET += 1
+                Log.i("SET", "SET: $SET")
+                // pass seleted sets to history
+//                val intent = Intent(this@MainActivity, HistoryActivity::class.java)
+                val selectedCards = selectedViews.map { cardView ->
+                    SelectedSet(
+                        id = cardView.id,
+                        color = cardView.color,
+                        number = cardView.number,
+                        shape = cardView.shape,
+                        shading = cardView.shading
+                    )
+                }
+                selectedCards.forEach { selectedCard ->
+                    SelectedCards.selectedCards.add(selectedCard)
+                }
+
+//                intent.putParcelableArrayListExtra("selectedCards", ArrayList(selectedCards))
+//                startActivity(intent)
+
+                // animations of set forming
+                val animatorSet = AnimatorSet() // Create an AnimatorSet to combine multiple
                 val fadeOutAnimators = mutableListOf<ObjectAnimator>() // fade-out animations for each selected card
                 for (cardView in selectedViews) {
                     val fadeOutAnimator = ObjectAnimator.ofFloat(cardView, View.ALPHA, 1f, 0f) // invisible
@@ -126,16 +194,19 @@ class MainActivity : AppCompatActivity(), SetCardView.SetCardClickListener {
                 animatorSet.addListener(object : Animator.AnimatorListener {
                     override fun onAnimationStart(animation: Animator) {}
                     override fun onAnimationEnd(animation: Animator) {
-                        replaceCards(selectedViews)
+                        replaceCards(selectedViews) // replace 3 cards
                     }
                     override fun onAnimationCancel(animation: Animator) {}
                     override fun onAnimationRepeat(animation: Animator) {}
                 })
-
             } else {
                 Toast.makeText(this, "Not a valid set", Toast.LENGTH_SHORT).show()
                 //  in case if no set
-
+                var setNotFound: Boolean = true
+                if (setNotFound) {
+                    Log.i("deal", "deal card")
+                    dealCards()
+                }
             }
 
 
@@ -145,8 +216,7 @@ class MainActivity : AppCompatActivity(), SetCardView.SetCardClickListener {
     }
 
     private fun makingSet(selectedViews: List<SetCardView>): Boolean {
-//        val selectedViews = selectedIds.map { findViewById<SetCardView>(it) }
-        Log.d("MainActivity", "Selected card IDs: $selectedIds")
+//        Log.d("MainActivity", "Selected card IDs: $selectedIds")
 
 //        return checkAttributes(selectedViews, SetCardView::color) &&
 //                checkAttributes(selectedViews, SetCardView::shape) &&
@@ -166,6 +236,7 @@ class MainActivity : AppCompatActivity(), SetCardView.SetCardClickListener {
             attrIndex -= 1
             Log.d("Index", "attrIndex: $attrIndex")
         }
+        // show the new deal cards
         val fadeInAnimators = mutableListOf<ObjectAnimator>()
         for (cardView in selectedViews) {
             // Create fade-in animator for each card
@@ -179,6 +250,62 @@ class MainActivity : AppCompatActivity(), SetCardView.SetCardClickListener {
         animatorSet.playTogether(fadeInAnimators as Collection<Animator>)
         animatorSet.start()
     }
+
+    private fun dealCards() {
+        var numOfCard = 3
+//        var cardIds = ArrayList<Int>() // to store each card's Id
+
+        // adding cards
+        val parentLayout: LinearLayout = findViewById(R.id.parentLayout)
+
+//        attrSets = randomAttrs(colors, numbers, shapes, shadings)
+//        Log.d("MainActivity", "Size of combinations: ${attrSets.size}") // 81
+//        for (i in 1..4) { // initial 12 cards
+        val linearLayout = LinearLayout(this)
+        linearLayout.orientation = LinearLayout.HORIZONTAL
+        linearLayout.layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, // width
+            LinearLayout.LayoutParams.WRAP_CONTENT // height
+        ).apply {
+            weight = 1f
+        }
+        linearLayout.gravity = Gravity.CENTER
+
+
+        for (j in 1..numOfCard) {
+
+            val layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT
+            )
+            layoutParams.weight = 1f
+            layoutParams.setMargins(10, 10, 10, 10)
+
+            // random attrs
+            val cardView = SetCardView(this)
+            cardView.setCardClickListener(this)
+            cardView.id = View.generateViewId()
+            cardView.addCardIds(cardView.id)
+            cardView.layoutParams = layoutParams
+            cardView.color = attrSets[attrIndex].color
+            cardView.number = attrSets[attrIndex].number
+            cardView.shape = SetCardView.Shape.valueOf(attrSets[attrIndex].shape)
+            cardView.shading = SetCardView.Shading.valueOf(attrSets[attrIndex].shading)
+            attrIndex -= 1
+            Log.d("Index", "attrIndex: $attrIndex")
+
+            linearLayout.addView(cardView)
+        }
+        parentLayout.addView(linearLayout)
+
+        val scrollView: ScrollView = findViewById(R.id.scrollView)
+        scrollView.post {
+            scrollView.fullScroll(ScrollView.FOCUS_DOWN)
+        }
+
+    }
+
+
     private fun <T> checkAttributes(selectedViews: List<SetCardView>, attributeSelector: (SetCardView) -> T): Boolean {
         val attributes = selectedViews.map(attributeSelector)
         return compareSame(attributes[0], attributes[1], attributes[2]) ||

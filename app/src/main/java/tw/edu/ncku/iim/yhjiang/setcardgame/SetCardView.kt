@@ -13,12 +13,14 @@ import android.view.View
  */
 
 var cardIds = mutableListOf<Int>() // to store each card's Id
+var setsIds = mutableListOf<Int>() // temp save each set's Id
 var selectedIds = mutableListOf<Int>()// to store selected card's Id
 class SetCardView : View {
 //    var cardId = intent.getStringExtra("cardIds")
     enum class Shape {
         OVAL, DIAMOND, WORM
     }
+
 
     enum class Shading {
         EMPTY, SOLID, STRIP
@@ -56,18 +58,16 @@ class SetCardView : View {
             invalidate()
         }
 
-    var isVisible: Boolean = true
-        set(value) {
-            field = value
-            invalidate() // Redraw the view to reflect the changes
-        }
-
 
 
     fun addCardIds(id: Int) {
         cardIds.add(id)
         Log.i("SetCardView", "Card ID added: $id")
         Log.i("SetCardView", "Card IDs: $cardIds")
+    }
+
+    fun addSetIds(id: Int) {
+        setsIds.add(id)
     }
 
 //    fun getSelectedIds(): ArrayList<Int> {
@@ -223,7 +223,7 @@ class SetCardView : View {
     private fun drawShapes(canvas: Canvas) {
         mPaint.color = color
         for (cardId in cardIds) {
-            if (id == cardId && isVisible) {
+            if (id == cardId) {
                 if (number == 1) {
                     drawShapeWithVerticalOffset(canvas, 0f)
                 } else if (number == 2) {
@@ -237,6 +237,22 @@ class SetCardView : View {
                     drawShapeWithVerticalOffset(canvas, (h - h / 4).toFloat())
                 }
             }
+        }
+
+        for (setId in setsIds) {
+            if (number == 1) {
+                drawShapeWithVerticalOffset(canvas, 0f)
+            } else if (number == 2) {
+                val h = height / 4
+                drawShapeWithVerticalOffset(canvas, -(h - h / 4).toFloat())
+                drawShapeWithVerticalOffset(canvas, (h - h / 4).toFloat())
+            } else {
+                val h = height / 3
+                drawShapeWithVerticalOffset(canvas, -(h - h / 4).toFloat())
+                drawShapeWithVerticalOffset(canvas, 0f)
+                drawShapeWithVerticalOffset(canvas, (h - h / 4).toFloat())
+            }
+
         }
 
 
