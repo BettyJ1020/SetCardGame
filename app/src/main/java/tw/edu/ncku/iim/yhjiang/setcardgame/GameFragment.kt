@@ -224,7 +224,7 @@ class GameFragment : Fragment(), SetCardView.SetCardClickListener {
                         selectedCard.shape,
                         selectedCard.shading
                     )
-//                    SelectedCards.selectedCards.add(selectedSet)
+                    SelectedCards.selectedCards.add(selectedSet)
                 }
 
 
