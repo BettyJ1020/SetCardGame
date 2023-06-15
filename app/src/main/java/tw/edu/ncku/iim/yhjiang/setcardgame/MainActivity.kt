@@ -68,9 +68,6 @@ val RED = Color.RED
 val GREEN = Color.GREEN
 
 var SET = 0
-var setIds = mutableListOf<Int>() // store ids of set
-
-
 
 class MainActivity : AppCompatActivity(), SetCardView.SetCardClickListener {
     // set of attributes
@@ -137,14 +134,32 @@ class MainActivity : AppCompatActivity(), SetCardView.SetCardClickListener {
 
         val button: Button = findViewById(R.id.button_history)
         button.setOnClickListener {
-            // Code to be executed when the button is clicked
-            // For example, you can start a new activity here
             val intent = Intent(this@MainActivity, HistoryActivity::class.java)
             intent.putExtra("SET", SET)
-//            intent.
 
             startActivity(intent)
         }
+
+        val buttonRestart: Button = findViewById(R.id.button_restart)
+        buttonRestart.setOnClickListener {
+            // Code to be executed when the restart button is clicked
+            restartGame()
+        }
+    }
+    private fun restartGame() {
+        // Reset necessary variables
+        attrIndex = 80
+        SET = 0
+        SelectedCards.selectedCards.clear()
+
+        // Remove all cards from the parent layout
+        val parentLayout: LinearLayout = findViewById(R.id.parentLayout)
+        parentLayout.removeAllViews()
+
+        // Restart the activity
+        val intent = Intent(this@MainActivity, MainActivity::class.java)
+        finish()
+        startActivity(intent)
     }
 
     override fun onSetCardClick(clickedCardIds: List<Int>) {
@@ -265,10 +280,11 @@ class MainActivity : AppCompatActivity(), SetCardView.SetCardClickListener {
         linearLayout.orientation = LinearLayout.HORIZONTAL
         linearLayout.layoutParams = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, // width
-            LinearLayout.LayoutParams.WRAP_CONTENT // height
-        ).apply {
-            weight = 1f
-        }
+            550 // height
+        )
+//            .apply {
+//            weight = 1f
+//        }
         linearLayout.gravity = Gravity.CENTER
 
 
@@ -298,10 +314,10 @@ class MainActivity : AppCompatActivity(), SetCardView.SetCardClickListener {
         }
         parentLayout.addView(linearLayout)
 
-        val scrollView: ScrollView = findViewById(R.id.scrollView)
-        scrollView.post {
-            scrollView.fullScroll(ScrollView.FOCUS_DOWN)
-        }
+//        val scrollView: ScrollView = findViewById(R.id.scrollView)
+//        scrollView.post {
+//            scrollView.fullScroll(ScrollView.FOCUS_DOWN)
+//        }
 
     }
 
