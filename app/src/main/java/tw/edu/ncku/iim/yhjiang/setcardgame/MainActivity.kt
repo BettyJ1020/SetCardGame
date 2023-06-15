@@ -175,7 +175,6 @@ class MainActivity : AppCompatActivity(), SetCardView.SetCardClickListener {
                 SET += 1
                 Log.i("SET", "SET: $SET")
                 // pass seleted sets to history
-//                val intent = Intent(this@MainActivity, HistoryActivity::class.java)
                 val selectedCards = selectedViews.map { cardView ->
                     SelectedSet(
                         id = cardView.id,
@@ -189,8 +188,6 @@ class MainActivity : AppCompatActivity(), SetCardView.SetCardClickListener {
                     SelectedCards.selectedCards.add(selectedCard)
                 }
 
-//                intent.putParcelableArrayListExtra("selectedCards", ArrayList(selectedCards))
-//                startActivity(intent)
 
                 // animations of set forming
                 val animatorSet = AnimatorSet() // Create an AnimatorSet to combine multiple
