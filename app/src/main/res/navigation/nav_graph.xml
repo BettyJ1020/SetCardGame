@@ -2,17 +2,25 @@
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/gameFragment4">
+    app:startDestination="@id/gameFragment">
     <fragment
-        android:id="@+id/gameFragment4"
+        android:id="@+id/gameFragment"
         android:name="tw.edu.ncku.iim.yhjiang.setcardgame.GameFragment"
         android:label="GameFragment" >
         <action
-            android:id="@+id/action_gameFragment4_to_historyFragment4"
-            app:destination="@id/historyFragment4" />
+            android:id="@+id/actionGameFragmentToHistoryFragment"
+            app:destination="@id/historyFragment" />
     </fragment>
     <fragment
-        android:id="@+id/historyFragment4"
+        android:id="@+id/historyFragment"
         android:name="tw.edu.ncku.iim.yhjiang.setcardgame.HistoryFragment"
-        android:label="HistoryFragment" />
+        android:label="HistoryFragment" >
+        <argument
+            android:name="SET"
+            app:argType="integer"
+            android:defaultValue="0" />
+        <action
+            android:id="@+id/action_historyFragment_to_gameFragment"
+            app:destination="@id/gameFragment" />
+    </fragment>
 </navigation>

@@ -65,14 +65,9 @@ class SetCardView : View {
         Log.i("SetCardView", "Card ID added: $id")
         Log.i("SetCardView", "Card IDs: $cardIds")
     }
-
     fun addSetIds(id: Int) {
         setsIds.add(id)
     }
-
-//    fun getSelectedIds(): ArrayList<Int> {
-//        return selectedIds
-//    }
 
 
     companion object SetCardConstants {
@@ -239,7 +234,7 @@ class SetCardView : View {
             }
         }
 
-        for (setId in setsIds) {
+        for (setId in setsIds) { // history set of cards
             if (number == 1) {
                 drawShapeWithVerticalOffset(canvas, 0f)
             } else if (number == 2) {

@@ -1,5 +1,6 @@
 package tw.edu.ncku.iim.yhjiang.setcardgame
 
+import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
@@ -10,6 +11,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.databinding.DataBindingUtil
+import androidx.navigation.fragment.navArgs
+import tw.edu.ncku.iim.yhjiang.setcardgame.databinding.FragmentGameBinding
 import tw.edu.ncku.iim.yhjiang.setcardgame.databinding.FragmentHistoryBinding
 
 class HistoryFragment : Fragment() {
@@ -21,16 +25,26 @@ class HistoryFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        binding = FragmentHistoryBinding.inflate(inflater)
+        binding = FragmentHistoryBinding.inflate(inflater, container, false)
         return binding.root
     }
+
+    val args: HistoryFragmentArgs by navArgs<HistoryFragmentArgs>()
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         val setCount = GameFragment.SET
-        val setFoundTextView: TextView = binding.textSET
+        Log.i("args", "SET: $setCount")
+        val setFoundTextView: TextView = view.findViewById(R.id.text_SET)
         setFoundTextView.text = "SET Found: $setCount"
+
+        if (setCount != 0) {
+            showSetOfCards(setCount)
+        }
+    }
+
+    fun showSetOfCards(setCount: Int) {
         val parent : LinearLayout = binding.parentHistoryLayout
         parent.setBackgroundColor(Color.BLACK)
 
@@ -60,11 +74,9 @@ class HistoryFragment : Fragment() {
 
                 // random attrs
                 val cardView = SetCardView(requireContext())
-                cardView.tag = "Card ${selectedCards[j].id}"
                 cardView.id = View.generateViewId()
                 cardView.addSetIds(cardView.id)
                 cardView.layoutParams = layoutParams
-                Log.i("selectedCards", "Added card with tag: ${cardView.tag}")
                 cardView.color = selectedCards[j].color
                 cardView.number = selectedCards[j].number
                 cardView.shape = selectedCards[j].shape
@@ -74,9 +86,6 @@ class HistoryFragment : Fragment() {
             }
             parent.addView(linearLayout)
         }
-
-
-
     }
 
 }

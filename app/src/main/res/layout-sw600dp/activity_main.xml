@@ -16,13 +16,15 @@
         android:name="tw.edu.ncku.iim.yhjiang.setcardgame.GameFragment"
         android:layout_width="0dp"
         android:layout_height="match_parent"
-        android:layout_weight="2"/>
+        android:layout_weight="2"
+         />
 
     <fragment
         android:id="@+id/historyFragment"
         android:name="tw.edu.ncku.iim.yhjiang.setcardgame.HistoryFragment"
         android:layout_width="0dp"
         android:layout_height="match_parent"
+        tools:layout="@layout/fragment_history"
         android:layout_weight="1"/>
 
 

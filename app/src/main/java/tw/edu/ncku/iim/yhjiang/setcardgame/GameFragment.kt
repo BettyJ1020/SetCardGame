@@ -19,6 +19,7 @@ import android.view.Gravity
 import android.view.ScrollCaptureSession
 import android.view.View
 import android.widget.*
+import androidx.navigation.fragment.findNavController
 import tw.edu.ncku.iim.yhjiang.setcardgame.databinding.FragmentGameBinding
 
 
@@ -31,14 +32,14 @@ class GameFragment : Fragment(), SetCardView.SetCardClickListener {
     )
 
     data class SelectedSet(
-        val id: Int,
+//        val id: Int,
         val color: Int,
         val number: Int,
         val shape: SetCardView.Shape,
         val shading: SetCardView.Shading
     ): Parcelable {
         constructor(parcel: Parcel) : this(
-            parcel.readInt(),
+//            parcel.readInt(),
             parcel.readInt(),
             parcel.readInt(),
             SetCardView.Shape.valueOf(parcel.readString()!!),
@@ -46,7 +47,7 @@ class GameFragment : Fragment(), SetCardView.SetCardClickListener {
         )
 
         override fun writeToParcel(parcel: Parcel, flags: Int) {
-            parcel.writeInt(id)
+//            parcel.writeInt(id)
             parcel.writeInt(color)
             parcel.writeInt(number)
             parcel.writeString(shape.name)
@@ -68,7 +69,8 @@ class GameFragment : Fragment(), SetCardView.SetCardClickListener {
         }
     }
 
-    var attrIndex = 80
+
+    var attrIndex = 80 // 81 cards
     val PURPLE = Color.rgb(128, 0, 128)
     val RED = Color.RED
     val GREEN = Color.GREEN
@@ -77,27 +79,24 @@ class GameFragment : Fragment(), SetCardView.SetCardClickListener {
     val numbers = listOf(1, 2, 3)
     val shapes = listOf("WORM", "DIAMOND", "OVAL")
     val shadings = listOf("SOLID", "STRIP", "EMPTY")
-
+    var setNotFound: Boolean = true
 
     private lateinit var binding: FragmentGameBinding
     private lateinit var parentLayout: LinearLayout
-    private lateinit var buttonHistroy: Button
+    private lateinit var buttonHistory: Button
     private lateinit var buttonRestart: Button
 
+
+    // control SET value
     companion object {
         var SET: Int = 0
     }
-
-    // Function to increment the value of myVariable by 1
     private fun incrementSET() {
         SET++
     }
-
-    // Function to reset the value of myVariable to 0
     private  fun resetSET() {
         SET = 0
     }
-
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -110,12 +109,12 @@ class GameFragment : Fragment(), SetCardView.SetCardClickListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
         val linearLayout = LinearLayout(requireContext())
         val cardView = SetCardView(requireContext())
-        val intent = Intent(requireContext(), HistoryActivity::class.java)
 
         parentLayout = binding.parentLayout
-        buttonHistroy = binding.buttonHistory
+        buttonHistory = binding.buttonHistory
         buttonRestart = binding.buttonRestart
 
         var numOfCard = 3
@@ -132,11 +131,8 @@ class GameFragment : Fragment(), SetCardView.SetCardClickListener {
 //                weight = 1f
 //            }
             linearLayout.gravity = Gravity.CENTER
-//            linearLayout.setBackgroundColor(Color.RED)
-
 
             for (j in 1..numOfCard) {
-
                 val layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.MATCH_PARENT
@@ -163,23 +159,29 @@ class GameFragment : Fragment(), SetCardView.SetCardClickListener {
         }
 
 
-        buttonHistroy.setOnClickListener {
-            val intent = Intent(requireActivity(), HistoryActivity::class.java)
-            intent.putExtra("SET", SET)
-
-            startActivity(intent)
+        if (parentFragment != null) { // on phone
+            buttonHistory.setOnClickListener {
+                val action = GameFragmentDirections.actionGameFragmentToHistoryFragment(binding.set)
+                findNavController().navigate(action)
+            }
+        }
+        else { // on tablet
+            buttonHistory.setOnClickListener {
+                val historyFragment = requireActivity().supportFragmentManager.findFragmentById(R.id.historyFragment) as? HistoryFragment
+                historyFragment?.showSetOfCards(SET)
+            }
         }
 
         buttonRestart.setOnClickListener {
-            // Code to be executed when the restart button is clicked
             restartGame()
         }
-
-
     }
 
+//    override fun onAttach(context: Context) {
+//        super.onAttach(context)
+//    }
+
     private fun restartGame() {
-        // Reset necessary variables
         attrIndex = 80
         resetSET()
         SelectedCards.selectedCards.clear()
@@ -202,14 +204,16 @@ class GameFragment : Fragment(), SetCardView.SetCardClickListener {
     private fun handleSelectedIds(selectedIds: List<Int>) {
         // Access the selectedIds list and perform any desired operations
         if (selectedIds.size == 3) {
+            Log.d("MainActivity", "Selected card IDs: ${tw.edu.ncku.iim.yhjiang.setcardgame.selectedIds}")
             val selectedViews = tw.edu.ncku.iim.yhjiang.setcardgame.selectedIds.map { binding.root.findViewById<SetCardView>(it) }
+            for (cardView in selectedViews) {
+                cardView.cardSelected = false
+                cardView.refreshSelected()
+            }
             if (makingSet(selectedViews)) { // if forms a set
                 incrementSET()
-                Log.i("SET", "SET: $SET")
-                // pass seleted sets to history
                 val selectedCards = selectedViews.map { cardView ->
                     SelectedSet(
-                        id = cardView.id,
                         color = cardView.color,
                         number = cardView.number,
                         shape = cardView.shape,
@@ -218,7 +222,6 @@ class GameFragment : Fragment(), SetCardView.SetCardClickListener {
                 }
                 selectedCards.forEach { selectedCard ->
                     val selectedSet = GameFragment.SelectedSet(
-                        selectedCard.id,
                         selectedCard.color,
                         selectedCard.number,
                         selectedCard.shape,
@@ -226,7 +229,6 @@ class GameFragment : Fragment(), SetCardView.SetCardClickListener {
                     )
                     SelectedCards.selectedCards.add(selectedSet)
                 }
-
 
                 // animations of set forming
                 val animatorSet = AnimatorSet() // Create an AnimatorSet to combine multiple
@@ -250,68 +252,79 @@ class GameFragment : Fragment(), SetCardView.SetCardClickListener {
                     override fun onAnimationCancel(animation: Animator) {}
                     override fun onAnimationRepeat(animation: Animator) {}
                 })
-            } else {
-                Toast.makeText(requireContext(), "Not a valid set", Toast.LENGTH_SHORT).show()
-                //  in case if no set
-                var setNotFound: Boolean = true
-                if (setNotFound) {
-                    Log.i("deal", "deal card")
+            } else { // set not found
+                setNotFound = true // write a function to check
+
+                if (setNotFound && attrIndex >= 2) {
+                    Toast.makeText(requireContext(), "Not a valid set", Toast.LENGTH_SHORT).show()
                     dealCards()
+                } else if (setNotFound && attrIndex < 2) {
+                    val linearLayout = LinearLayout(requireContext())
+                    linearLayout.orientation = LinearLayout.VERTICAL
+                    linearLayout.layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, // width
+                        LinearLayout.LayoutParams.MATCH_PARENT // height
+                    )
+                    linearLayout.gravity = Gravity.CENTER
+                    linearLayout.setBackgroundColor(Color.BLACK)
+                    val textGameEnd = TextView(requireContext())
+                    textGameEnd.text = "Game Over"
+                    textGameEnd.setTextColor(Color.WHITE)
+                    textGameEnd.gravity = Gravity.CENTER
+                    textGameEnd.textSize = 24f
+                    linearLayout.addView(textGameEnd)
+                    val rootLayout = binding.rootLayout
+                    val scrollView = binding.scrollView
+                    scrollView.visibility = View.INVISIBLE
+                    rootLayout.addView(linearLayout)
+                    restartGame()
+                } else if (!setNotFound) {
+                    Toast.makeText(requireContext(), "Not a valid set, Still have sets", Toast.LENGTH_SHORT).show()
                 }
+
+            }
+        }
+    }
+    private fun makingSet(selectedViews: List<SetCardView>): Boolean {
+
+        return checkAttributes(selectedViews, SetCardView::color) &&
+                checkAttributes(selectedViews, SetCardView::shape) &&
+                checkAttributes(selectedViews, SetCardView::shading) &&
+                checkAttributes(selectedViews, SetCardView::number)
+//        return false
+    }
+    private fun replaceCards(selectedViews: List<SetCardView>) {
+        if (attrIndex >= 2) { // remaining at least 3 cards
+            for (cardView in selectedViews) {
+                cardView.color = attrSets[attrIndex].color
+                cardView.number = attrSets[attrIndex].number
+                cardView.shape = SetCardView.Shape.valueOf(attrSets[attrIndex].shape)
+                cardView.shading = SetCardView.Shading.valueOf(attrSets[attrIndex].shading)
+                cardView.cardSelected = false
+                cardView.refreshSelected() // remove from selectedIds
+                attrIndex -= 1
+                Log.d("Index", "attrIndex: $attrIndex")
+            }
+            // show the new deal cards
+            val fadeInAnimators = mutableListOf<ObjectAnimator>()
+            for (cardView in selectedViews) {
+                // Create fade-in animator for each card
+                val fadeInAnimator = ObjectAnimator.ofFloat(cardView, View.ALPHA, 0f, 1f) // visible
+                fadeInAnimator.duration = 1600 // Adjust the duration as needed
+                fadeInAnimators.add(fadeInAnimator)
             }
 
-
+            // Create an AnimatorSet to combine the fade-in animations
+            val animatorSet = AnimatorSet()
+            animatorSet.playTogether(fadeInAnimators as Collection<Animator>)
+            animatorSet.start()
         }
-
-
     }
-
-    private fun makingSet(selectedViews: List<SetCardView>): Boolean {
-//        Log.d("MainActivity", "Selected card IDs: $selectedIds")
-
-//        return checkAttributes(selectedViews, SetCardView::color) &&
-//                checkAttributes(selectedViews, SetCardView::shape) &&
-//                checkAttributes(selectedViews, SetCardView::shading) &&
-//                checkAttributes(selectedViews, SetCardView::number)
-        return true
-    }
-
-    private fun replaceCards(selectedViews: List<SetCardView>) {
-        for (cardView in selectedViews) {
-            cardView.color = attrSets[attrIndex].color
-            cardView.number = attrSets[attrIndex].number
-            cardView.shape = SetCardView.Shape.valueOf(attrSets[attrIndex].shape)
-            cardView.shading = SetCardView.Shading.valueOf(attrSets[attrIndex].shading)
-            cardView.cardSelected = false
-            cardView.refreshSelected() // remove from selectedIds
-            attrIndex -= 1
-            Log.d("Index", "attrIndex: $attrIndex")
-        }
-        // show the new deal cards
-        val fadeInAnimators = mutableListOf<ObjectAnimator>()
-        for (cardView in selectedViews) {
-            // Create fade-in animator for each card
-            val fadeInAnimator = ObjectAnimator.ofFloat(cardView, View.ALPHA, 0f, 1f) // visible
-            fadeInAnimator.duration = 1900 // Adjust the duration as needed
-            fadeInAnimators.add(fadeInAnimator)
-        }
-
-        // Create an AnimatorSet to combine the fade-in animations
-        val animatorSet = AnimatorSet()
-        animatorSet.playTogether(fadeInAnimators as Collection<Animator>)
-        animatorSet.start()
-    }
-
     private fun dealCards() {
         var numOfCard = 3
-//        var cardIds = ArrayList<Int>() // to store each card's Id
 
         // adding cards
         val parentLayout = binding.parentLayout
-
-//        attrSets = randomAttrs(colors, numbers, shapes, shadings)
-//        Log.d("MainActivity", "Size of combinations: ${attrSets.size}") // 81
-//        for (i in 1..4) { // initial 12 cards
         val linearLayout = LinearLayout(requireContext())
         linearLayout.orientation = LinearLayout.HORIZONTAL
         linearLayout.layoutParams = LinearLayout.LayoutParams(
@@ -322,7 +335,6 @@ class GameFragment : Fragment(), SetCardView.SetCardClickListener {
 //            weight = 1f
 //        }
         linearLayout.gravity = Gravity.CENTER
-
 
         for (j in 1..numOfCard) {
 
@@ -349,14 +361,7 @@ class GameFragment : Fragment(), SetCardView.SetCardClickListener {
             linearLayout.addView(cardView)
         }
         parentLayout.addView(linearLayout)
-
-//        val scrollView: ScrollView = findViewById(R.id.scrollView)
-//        scrollView.post {
-//            scrollView.fullScroll(ScrollView.FOCUS_DOWN)
-//        }
-
     }
-
 
     private fun <T> checkAttributes(selectedViews: List<SetCardView>, attributeSelector: (SetCardView) -> T): Boolean {
         val attributes = selectedViews.map(attributeSelector)
